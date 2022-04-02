@@ -1,7 +1,10 @@
 {
     "name": "com.akihiro.tiltbrushsdk",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:56ceeb69b3820614298ba3264a0d0180",
+        "GUID:9a5570e80d5515e468de36b82e536b13"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
