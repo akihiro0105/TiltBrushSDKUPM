@@ -1,0 +1,17 @@
+{
+    "name": "com.akihiro.tiltbrushsdk",
+    "version": "1.0.0",
+    "displayName": "com.akihiro.tiltbrushsdk",
+    "description": "com.akihiro.tiltbrushsdk",
+    "unity": "2020.3",
+    "samples": [
+        {
+            "displayName": "Sample",
+            "description": "Sample",
+            "path": "Samples"
+        }
+    ],
+    "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.0.1"
+    }
+}
