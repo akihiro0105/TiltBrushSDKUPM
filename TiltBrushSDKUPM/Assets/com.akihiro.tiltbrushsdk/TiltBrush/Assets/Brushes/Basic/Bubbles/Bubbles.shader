@@ -50,6 +50,8 @@ Shader "Brush/Particle/Bubbles" {
 				float4 vertex : SV_POSITION;
 				fixed4 color : COLOR;
 				float2 texcoord : TEXCOORD0;
+
+				UNITY_VERTEX_OUTPUT_STEREO
 			  };
 
 			  float4 _MainTex_ST;
@@ -79,6 +81,11 @@ Shader "Brush/Particle/Bubbles" {
 
 			  v2f vert(ParticleVertexWithSpread_t v) {
 				v2f o;
+
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_OUTPUT(v2f, o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
 				v.color = TbVertToSrgb(v.color);
 				float birthTime = v.texcoord.w;
 				float rotation = v.texcoord.z;
@@ -103,6 +110,8 @@ Shader "Brush/Particle/Bubbles" {
 
 			  fixed4 frag(v2f i) : SV_Target
 			  {
+				  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
 				float4 tex = tex2D(_MainTex, i.texcoord);
 
 				// RGB Channels of the texture are affected by color

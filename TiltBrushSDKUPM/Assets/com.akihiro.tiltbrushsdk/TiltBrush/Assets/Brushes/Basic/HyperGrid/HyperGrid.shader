@@ -48,12 +48,16 @@ Shader "Brush/Special/HyperGrid" {
 				fixed4 color : COLOR;
 				float2 texcoord : TEXCOORD0;
 				float4 texcoord1 : TEXCOORD1;
+
+				UNITY_VERTEX_INPUT_INSTANCE_ID
 			  };
 
 			  struct v2f {
 				float4 vertex : SV_POSITION;
 				fixed4 color : COLOR;
 				float2 texcoord : TEXCOORD0;
+
+				UNITY_VERTEX_OUTPUT_STEREO
 			  };
 
 			  float4 _MainTex_ST;
@@ -62,6 +66,11 @@ Shader "Brush/Special/HyperGrid" {
 			  {
 				v.color = TbVertToSrgb(v.color);
 				v2f o;
+
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_OUTPUT(v2f, o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
 				// Subtract out the Canvas space pose to keep the verts from popping around while
 				// transforming (e.g. apply quantization in an immutable space).
 				float4 worldPos = mul(unity_ObjectToWorld, v.vertex);
@@ -93,6 +102,8 @@ Shader "Brush/Special/HyperGrid" {
 			  // Input color is srgb
 			  fixed4 frag(v2f i) : SV_Target
 			  {
+				  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
 				float4 c = i.color * _TintColor * tex2D(_MainTex, i.texcoord);
 				c = float4(c.rgb * c.a, 1.0);
 				c = SrgbToNative(c);

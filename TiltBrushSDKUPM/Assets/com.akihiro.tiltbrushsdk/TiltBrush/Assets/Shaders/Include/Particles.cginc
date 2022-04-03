@@ -51,6 +51,8 @@ struct ParticleVertex_t {
   float3 center : TEXCOORD1;
   fixed4 color : COLOR;
   float4 texcoord : TEXCOORD0;  // xy: texcoord   z: rotation   w: birth time
+    
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 // Rotates the corner of a square quad centered at the origin

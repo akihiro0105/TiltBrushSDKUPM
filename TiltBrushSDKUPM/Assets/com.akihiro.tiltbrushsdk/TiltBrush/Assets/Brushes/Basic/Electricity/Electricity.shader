@@ -31,6 +31,8 @@ Shader "Brush/Special/Electricity" {
 		  float3 tangent : TANGENT;
 		  float2 texcoord0 : TEXCOORD0;
 		  float3 texcoord1 : TEXCOORD1;
+
+		  UNITY_VERTEX_INPUT_INSTANCE_ID
 	  };
 
 	  sampler2D _MainTex;
@@ -41,6 +43,8 @@ Shader "Brush/Special/Electricity" {
 		  float4 vertex : SV_POSITION;
 		  fixed4 color : COLOR;
 		  float2 texcoord : TEXCOORD0;
+
+		  UNITY_VERTEX_OUTPUT_STEREO
 	  };
 
 	  float3 displacement(float3 pos, float mod) {
@@ -67,6 +71,11 @@ Shader "Brush/Special/Electricity" {
 	  {
 		  v.color = TbVertToSrgb(v.color);
 		  v2f o;
+
+		  UNITY_SETUP_INSTANCE_ID(v);
+		  UNITY_INITIALIZE_OUTPUT(v2f, o);
+		  UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
 		  float envelope = sin(v.texcoord0.x * (3.14159));
 		  float envelopePow = (1 - pow(1 - envelope, 10));
 
@@ -114,13 +123,15 @@ Shader "Brush/Special/Electricity" {
 	  // Input color is srgb
 	  fixed4 frag(v2f i) : SV_Target
 	  {
-		  // interior procedural line
-		  float procedural = (abs(i.texcoord.y - 0.5) < .1) ? 2 : 0;
-		  i.color.a = 1; // kill any other alpha values that may come into this brush
-		  float4 c = i.color + i.color * procedural;
-		  c = float4(c.rgb * c.a, 1.0);
-		  c = SrgbToNative(c);
-		  return c;
+		  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
+	  // interior procedural line
+	  float procedural = (abs(i.texcoord.y - 0.5) < .1) ? 2 : 0;
+	  i.color.a = 1; // kill any other alpha values that may come into this brush
+	  float4 c = i.color + i.color * procedural;
+	  c = float4(c.rgb * c.a, 1.0);
+	  c = SrgbToNative(c);
+	  return c;
 	  }
 		  ENDCG
 

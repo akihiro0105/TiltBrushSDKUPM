@@ -13,88 +13,99 @@
 // limitations under the License.
 
 Shader "Brush/Visualizer/RainbowTube" {
-Properties {
-  _EmissionGain ("Emission Gain", Range(0, 1)) = 0.5
-}
+	Properties{
+	  _EmissionGain("Emission Gain", Range(0, 1)) = 0.5
+	}
 
-Category {
-  Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" }
-  Blend One One //SrcAlpha One
-  BlendOp Add, Min
-  AlphaTest Greater .01
-  ColorMask RGBA
-  Cull Off Lighting Off ZWrite Off Fog { Color (0,0,0,0) }
+		Category{
+		  Tags { "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
+		  Blend One One //SrcAlpha One
+		  BlendOp Add, Min
+		  AlphaTest Greater .01
+		  ColorMask RGBA
+		  Cull Off Lighting Off ZWrite Off Fog { Color(0,0,0,0) }
 
-  SubShader {
-    Pass {
+		  SubShader {
+			Pass {
 
-      CGPROGRAM
-      #pragma vertex vert
-      #pragma fragment frag
-      #pragma target 3.0
-      #pragma multi_compile_particles
-      #pragma multi_compile __ AUDIO_REACTIVE
-      #pragma multi_compile __ TBT_LINEAR_TARGET
-      #pragma target 3.0
+			  CGPROGRAM
+			  #pragma vertex vert
+			  #pragma fragment frag
+			  #pragma target 3.0
+			  #pragma multi_compile_particles
+			  #pragma multi_compile __ AUDIO_REACTIVE
+			  #pragma multi_compile __ TBT_LINEAR_TARGET
+			  #pragma target 3.0
 
-      #include "UnityCG.cginc"
-      #include "../../../Shaders/Include/Brush.cginc"
+			  #include "UnityCG.cginc"
+			  #include "../../../Shaders/Include/Brush.cginc"
 
-      float _EmissionGain;
+			  float _EmissionGain;
 
-      struct appdata_t {
-        float4 vertex : POSITION;
-        fixed4 color : COLOR;
-        float2 texcoord : TEXCOORD0;
-      };
+			  struct appdata_t {
+				float4 vertex : POSITION;
+				fixed4 color : COLOR;
+				float2 texcoord : TEXCOORD0;
 
-      struct v2f {
-        float4 vertex : SV_POSITION;
-        float4 color : COLOR;
-        float2 texcoord : TEXCOORD0;
-        float4 unbloomedColor : TEXCOORD1;
-      };
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			  };
 
-      v2f vert (appdata_t v)
-      {
-        v.color = TbVertToSrgb(v.color);
-        v2f o;
-        o.vertex = UnityObjectToClipPos(v.vertex);
-        o.texcoord = v.texcoord;
-        o.color = bloomColor(v.color, _EmissionGain);
-        o.unbloomedColor = v.color;
-        return o;
-      }
+			  struct v2f {
+				float4 vertex : SV_POSITION;
+				float4 color : COLOR;
+				float2 texcoord : TEXCOORD0;
+				float4 unbloomedColor : TEXCOORD1;
 
-      // Input color is srgb
-      fixed4 frag (v2f i) : SV_Target
-      {
-        // Envelope
-        float envelope = sin(i.texcoord.x * 3.14159);
-        i.texcoord.y += i.texcoord.x * 3 + _BeatOutputAccum.b*3;
-#ifdef AUDIO_REACTIVE
-        float waveform_r =  .5*(tex2D(_WaveFormTex, float2(i.texcoord.x,0)).r - .5f);
-        float waveform_g =  .5*(tex2D(_WaveFormTex, float2(i.texcoord.x*1.8,0)).r - .5f);
-        float waveform_b =  .5*(tex2D(_WaveFormTex, float2(i.texcoord.x*2.4,0)).r - .5f);
-#else
-        float waveform_r = .15 * sin( -20 * i.unbloomedColor.r * _Time.w + i.texcoord.x * 100 * i.unbloomedColor.r);
-        float waveform_g = .15 * sin( -30 * i.unbloomedColor.g * _Time.w + i.texcoord.x * 100 * i.unbloomedColor.g);
-        float waveform_b = .15 * sin( -40 * i.unbloomedColor.b * _Time.w + i.texcoord.x * 100 * i.unbloomedColor.b);
-#endif
-          i.texcoord.y = fmod(i.texcoord.y + i.texcoord.x, 1);
-        float procedural_line_r = saturate(1 - 40*abs(i.texcoord.y - .5 + waveform_r));
-        float procedural_line_g = saturate(1 - 40*abs(i.texcoord.y - .5 + waveform_g));
-        float procedural_line_b = saturate(1 - 40*abs(i.texcoord.y - .5 + waveform_b));
-        float4 color = procedural_line_r * float4(1,0,0,0) + procedural_line_g * float4(0,1,0,0) + procedural_line_b * float4(0,0,1,0);
-        color.w = 1;
-        color = i.color * color;
+				UNITY_VERTEX_OUTPUT_STEREO
+			  };
 
-        color = float4(color.rgb * color.a, 1.0);
-        color = SrgbToNative(color);
-        return color;
-      }
-      ENDCG
-    }
-  }
-}
+			  v2f vert(appdata_t v)
+			  {
+				v.color = TbVertToSrgb(v.color);
+				v2f o;
+
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_OUTPUT(v2f, o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+				o.vertex = UnityObjectToClipPos(v.vertex);
+				o.texcoord = v.texcoord;
+				o.color = bloomColor(v.color, _EmissionGain);
+				o.unbloomedColor = v.color;
+				return o;
+			  }
+
+			  // Input color is srgb
+			  fixed4 frag(v2f i) : SV_Target
+			  {
+				  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
+			  // Envelope
+			  float envelope = sin(i.texcoord.x * 3.14159);
+			  i.texcoord.y += i.texcoord.x * 3 + _BeatOutputAccum.b * 3;
+	  #ifdef AUDIO_REACTIVE
+			  float waveform_r = .5 * (tex2D(_WaveFormTex, float2(i.texcoord.x,0)).r - .5f);
+			  float waveform_g = .5 * (tex2D(_WaveFormTex, float2(i.texcoord.x * 1.8,0)).r - .5f);
+			  float waveform_b = .5 * (tex2D(_WaveFormTex, float2(i.texcoord.x * 2.4,0)).r - .5f);
+	  #else
+			  float waveform_r = .15 * sin(-20 * i.unbloomedColor.r * _Time.w + i.texcoord.x * 100 * i.unbloomedColor.r);
+			  float waveform_g = .15 * sin(-30 * i.unbloomedColor.g * _Time.w + i.texcoord.x * 100 * i.unbloomedColor.g);
+			  float waveform_b = .15 * sin(-40 * i.unbloomedColor.b * _Time.w + i.texcoord.x * 100 * i.unbloomedColor.b);
+	  #endif
+				i.texcoord.y = fmod(i.texcoord.y + i.texcoord.x, 1);
+			  float procedural_line_r = saturate(1 - 40 * abs(i.texcoord.y - .5 + waveform_r));
+			  float procedural_line_g = saturate(1 - 40 * abs(i.texcoord.y - .5 + waveform_g));
+			  float procedural_line_b = saturate(1 - 40 * abs(i.texcoord.y - .5 + waveform_b));
+			  float4 color = procedural_line_r * float4(1,0,0,0) + procedural_line_g * float4(0,1,0,0) + procedural_line_b * float4(0,0,1,0);
+			  color.w = 1;
+			  color = i.color * color;
+
+			  color = float4(color.rgb * color.a, 1.0);
+			  color = SrgbToNative(color);
+			  return color;
+			}
+			ENDCG
+		  }
+		}
+	}
 }

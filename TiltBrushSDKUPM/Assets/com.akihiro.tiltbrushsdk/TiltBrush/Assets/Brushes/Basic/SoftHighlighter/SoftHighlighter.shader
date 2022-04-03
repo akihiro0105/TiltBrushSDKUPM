@@ -13,72 +13,82 @@
 // limitations under the License.
 
 Shader "Brush/Special/SoftHighlighter" {
-Properties {
-  _MainTex ("Texture", 2D) = "white" {}
-}
+	Properties{
+	  _MainTex("Texture", 2D) = "white" {}
+	}
 
-Category {
-  Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" }
-  Blend SrcAlpha One
-  AlphaTest Greater .01
-  ColorMask RGB
-  Cull Off Lighting Off ZWrite Off Fog { Color (0,0,0,0) }
+		Category{
+		  Tags { "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
+		  Blend SrcAlpha One
+		  AlphaTest Greater .01
+		  ColorMask RGB
+		  Cull Off Lighting Off ZWrite Off Fog { Color(0,0,0,0) }
 
-  SubShader {
-    Pass {
+		  SubShader {
+			Pass {
 
-      CGPROGRAM
-      #pragma vertex vert
-      #pragma fragment frag
-      #pragma multi_compile __ AUDIO_REACTIVE
-      #pragma multi_compile __ TBT_LINEAR_TARGET
-      #include "UnityCG.cginc"
-      #include "../../../Shaders/Include/Brush.cginc"
+			  CGPROGRAM
+			  #pragma vertex vert
+			  #pragma fragment frag
+			  #pragma multi_compile __ AUDIO_REACTIVE
+			  #pragma multi_compile __ TBT_LINEAR_TARGET
+			  #include "UnityCG.cginc"
+			  #include "../../../Shaders/Include/Brush.cginc"
 
-      sampler2D _MainTex;
+			  sampler2D _MainTex;
 
-      struct appdata_t {
-        float4 vertex : POSITION;
-        fixed4 color : COLOR;
-        float3 normal : NORMAL;
-        float2 texcoord : TEXCOORD0;
-      };
+			  struct appdata_t {
+				float4 vertex : POSITION;
+				fixed4 color : COLOR;
+				float3 normal : NORMAL;
+				float2 texcoord : TEXCOORD0;
 
-      struct v2f {
-        float4 vertex : SV_POSITION;
-        fixed4 color : COLOR;
-        float2 texcoord : TEXCOORD0;
-      };
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			  };
 
-      float4 _MainTex_ST;
+			  struct v2f {
+				float4 vertex : SV_POSITION;
+				fixed4 color : COLOR;
+				float2 texcoord : TEXCOORD0;
 
-      v2f vert (appdata_t v)
-      {
+				UNITY_VERTEX_OUTPUT_STEREO
+			  };
 
-        v2f o;
+			  float4 _MainTex_ST;
 
-        o.texcoord = TRANSFORM_TEX(v.texcoord,_MainTex);
-#ifdef AUDIO_REACTIVE
-        v.color = TbVertToSrgb(v.color);
-        o.color = musicReactiveColor(v.color, _BeatOutput.z);
-        v.vertex = musicReactiveAnimation(v.vertex, v.color, _BeatOutput.z, o.texcoord.x);
-        o.color = SrgbToNative(o.color);
-#else
-        o.color = TbVertToNative(v.color);
-#endif
-        o.vertex = UnityObjectToClipPos(v.vertex);
+			  v2f vert(appdata_t v)
+			  {
 
-        return o;
+				v2f o;
 
-      }
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_OUTPUT(v2f, o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-      fixed4 frag (v2f i) : SV_Target
-      {
-         half4 c = tex2D(_MainTex, i.texcoord );
-        return i.color * c;
-      }
-      ENDCG
-    }
-  }
-}
+				o.texcoord = TRANSFORM_TEX(v.texcoord,_MainTex);
+		#ifdef AUDIO_REACTIVE
+				v.color = TbVertToSrgb(v.color);
+				o.color = musicReactiveColor(v.color, _BeatOutput.z);
+				v.vertex = musicReactiveAnimation(v.vertex, v.color, _BeatOutput.z, o.texcoord.x);
+				o.color = SrgbToNative(o.color);
+		#else
+				o.color = TbVertToNative(v.color);
+		#endif
+				o.vertex = UnityObjectToClipPos(v.vertex);
+
+				return o;
+
+			  }
+
+			  fixed4 frag(v2f i) : SV_Target
+			  {
+				  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
+				 half4 c = tex2D(_MainTex, i.texcoord);
+				return i.color * c;
+			  }
+			  ENDCG
+			}
+		  }
+	}
 }

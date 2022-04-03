@@ -35,6 +35,8 @@ Shader "Brush/Special/Toon" {
 		  fixed4 color : COLOR;
 		  float3 normal : NORMAL;
 		  float3 texcoord : TEXCOORD0;
+
+		  UNITY_VERTEX_INPUT_INSTANCE_ID
 	  };
 
 	  struct v2f {
@@ -42,12 +44,19 @@ Shader "Brush/Special/Toon" {
 		  fixed4 color : COLOR;
 		  float2 texcoord : TEXCOORD0;
 		  UNITY_FOG_COORDS(1)
+
+			  UNITY_VERTEX_OUTPUT_STEREO
 	  };
 
 	  v2f vertInflate(appdata_t v, float inflate)
 	  {
 
 		  v2f o;
+
+		  UNITY_SETUP_INSTANCE_ID(v);
+		  UNITY_INITIALIZE_OUTPUT(v2f, o);
+		  UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
 		  float outlineEnabled = inflate;
 		  float radius = v.texcoord.z;
 		  inflate *= radius * .4;
@@ -110,6 +119,8 @@ Shader "Brush/Special/Toon" {
 
 	  fixed4 fragBlack(v2f i) : SV_Target
 	  {
+		  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
 		float4 color = float4(0,0,0,1);
 		UNITY_APPLY_FOG(i.fogCoord, color);
 		return color;
@@ -117,6 +128,8 @@ Shader "Brush/Special/Toon" {
 
 		  fixed4 fragColor(v2f i) : SV_Target
 	  {
+		  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
 		UNITY_APPLY_FOG(i.fogCoord, i.color);
 		return i.color;
 	  }

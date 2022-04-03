@@ -13,67 +13,78 @@
 // limitations under the License.
 
 Shader "Brush/Special/AdditiveCutout" {
-Properties {
-  _MainTex ("Texture", 2D) = "white" {}
-  _Cutoff ("Alpha cutoff", Range(0,1)) = 0.5
+	Properties{
+	  _MainTex("Texture", 2D) = "white" {}
+	  _Cutoff("Alpha cutoff", Range(0,1)) = 0.5
 
-}
+	}
 
-Category {
-  Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" }
-  Blend SrcAlpha One
-  AlphaTest Greater .01
-  ColorMask RGB
-  Cull Off Lighting Off ZWrite Off Fog { Color (0,0,0,0) }
+		Category{
+		  Tags { "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
+		  Blend SrcAlpha One
+		  AlphaTest Greater .01
+		  ColorMask RGB
+		  Cull Off Lighting Off ZWrite Off Fog { Color(0,0,0,0) }
 
-  SubShader {
-    Pass {
+		  SubShader {
+			Pass {
 
-      CGPROGRAM
-      #pragma vertex vert
-      #pragma fragment frag
-      #pragma multi_compile __ TBT_LINEAR_TARGET
-      #include "UnityCG.cginc"
-      #include "../../../Shaders/Include/Brush.cginc"
+			  CGPROGRAM
+			  #pragma vertex vert
+			  #pragma fragment frag
+			  #pragma multi_compile __ TBT_LINEAR_TARGET
+			  #include "UnityCG.cginc"
+			  #include "../../../Shaders/Include/Brush.cginc"
 
-      sampler2D _MainTex;
-      uniform float _Cutoff;
-      struct appdata_t {
-        float4 vertex : POSITION;
-        fixed4 color : COLOR;
-        float3 normal : NORMAL;
-        float2 texcoord : TEXCOORD0;
-      };
+			  sampler2D _MainTex;
+			  uniform float _Cutoff;
+			  struct appdata_t {
+				float4 vertex : POSITION;
+				fixed4 color : COLOR;
+				float3 normal : NORMAL;
+				float2 texcoord : TEXCOORD0;
 
-      struct v2f {
-        float4 vertex : SV_POSITION;
-        fixed4 color : COLOR;
-        float2 texcoord : TEXCOORD0;
-      };
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			  };
 
-      float4 _MainTex_ST;
+			  struct v2f {
+				float4 vertex : SV_POSITION;
+				fixed4 color : COLOR;
+				float2 texcoord : TEXCOORD0;
 
-      v2f vert (appdata_t v)
-      {
+				UNITY_VERTEX_OUTPUT_STEREO
+			  };
 
-        v2f o;
-        o.vertex = UnityObjectToClipPos(v.vertex);
-        o.texcoord = TRANSFORM_TEX(v.texcoord,_MainTex);
-        o.color = TbVertToNative(v.color);
-        return o;
-      }
+			  float4 _MainTex_ST;
 
-      fixed4 frag (v2f i) : SV_Target
-      {
-         half4 c = tex2D(_MainTex, i.texcoord );
+			  v2f vert(appdata_t v)
+			  {
 
-        // Cutoff the alpha value based on the incoming vertex alpha
-        i.color.a = (i.color.a * c.a < _Cutoff) ? 0 : 1;
+				v2f o;
 
-        return i.color * float4(c.rgb,1);
-      }
-      ENDCG
-    }
-  }
-}
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_OUTPUT(v2f, o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+				o.vertex = UnityObjectToClipPos(v.vertex);
+				o.texcoord = TRANSFORM_TEX(v.texcoord,_MainTex);
+				o.color = TbVertToNative(v.color);
+				return o;
+			  }
+
+			  fixed4 frag(v2f i) : SV_Target
+			  {
+				  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
+				 half4 c = tex2D(_MainTex, i.texcoord);
+
+				 // Cutoff the alpha value based on the incoming vertex alpha
+				 i.color.a = (i.color.a * c.a < _Cutoff) ? 0 : 1;
+
+				 return i.color * float4(c.rgb,1);
+			   }
+			   ENDCG
+			 }
+		   }
+	  }
 }

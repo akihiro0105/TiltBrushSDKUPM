@@ -53,6 +53,8 @@ Shader "Brush/Visualizer/Dots" {
 				fixed4 color : COLOR;
 				float2 texcoord : TEXCOORD0;
 				float waveform : TEXCOORD1;
+
+				UNITY_VERTEX_OUTPUT_STEREO
 			  };
 
 			  float4 _MainTex_ST;
@@ -65,6 +67,11 @@ Shader "Brush/Visualizer/Dots" {
 			  {
 				v.color = TbVertToSrgb(v.color);
 				v2f o;
+
+				UNITY_SETUP_INSTANCE_ID(v);
+				UNITY_INITIALIZE_OUTPUT(v2f, o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
 				float birthTime = v.texcoord.w;
 				float rotation = v.texcoord.z;
 				float halfSize = GetParticleHalfSize(v.corner.xyz, v.center, birthTime);
@@ -90,24 +97,26 @@ Shader "Brush/Visualizer/Dots" {
 			  // Input color is srgb
 			  fixed4 frag(v2f i) : SV_Target
 			  {
-		#ifdef AUDIO_REACTIVE
-				  // Deform uv's by waveform displacement amount vertically
-				  // Envelop by "V" UV to keep the edges clean
-				  float vDistance = abs(i.texcoord.y - .5) * 2;
-				  float vStretched = (i.texcoord.y - 0.5) * (.5 - abs(i.waveform)) * 2 + 0.5;
-				  i.texcoord.y = lerp(vStretched, i.texcoord.y, vDistance);
-		  #endif
-				  float4 tex = tex2D(_MainTex, i.texcoord);
-				  float4 c = i.color * _TintColor * tex;
+				  UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-				  // Only alpha channel receives emission boost
-				  c.rgb += c.rgb * c.a * _EmissionGain;
-				  c.a = 1;
-				  c = SrgbToNative(c);
-				  return float4(c.rgb, 1.0);
-				}
-				ENDCG
-			  }
+		#ifdef AUDIO_REACTIVE
+			  // Deform uv's by waveform displacement amount vertically
+			  // Envelop by "V" UV to keep the edges clean
+			  float vDistance = abs(i.texcoord.y - .5) * 2;
+			  float vStretched = (i.texcoord.y - 0.5) * (.5 - abs(i.waveform)) * 2 + 0.5;
+			  i.texcoord.y = lerp(vStretched, i.texcoord.y, vDistance);
+	  #endif
+			  float4 tex = tex2D(_MainTex, i.texcoord);
+			  float4 c = i.color * _TintColor * tex;
+
+			  // Only alpha channel receives emission boost
+			  c.rgb += c.rgb * c.a * _EmissionGain;
+			  c.a = 1;
+			  c = SrgbToNative(c);
+			  return float4(c.rgb, 1.0);
 			}
+			ENDCG
+		  }
+		}
 	  }
 }
