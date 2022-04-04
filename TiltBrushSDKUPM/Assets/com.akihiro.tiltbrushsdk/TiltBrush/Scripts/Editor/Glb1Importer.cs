@@ -21,77 +21,96 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 
+#if UNITY_2020_3_OR_NEWER
+using AssetImporters= UnityEditor.AssetImporters;
+#else
+using AssetImporters = UnityEditor.Experimental.AssetImporters;
+#endif
 
-namespace TiltBrushToolkit {
 
-[UnityEditor.AssetImporters.ScriptedImporter(kVersion, "glb1", kImportQueueOffset)]
-public class Glb1Importer : UnityEditor.AssetImporters.ScriptedImporter {
-  const int kVersion = 1;
-  // ImportGltf needs to reference meshes and textures, so the glb import
-  // must come after them. We're assuming that Unity built-in asset types
-  // import at queue offset = 0.
-  const int kImportQueueOffset = 1;
+namespace TiltBrushToolkit
+{
 
-  private static readonly GltfImportOptions kOptions = new GltfImportOptions {
-      rescalingMode = GltfImportOptions.RescalingMode.CONVERT,
-      scaleFactor = 1,
-      recenter = false,
-  };
+    [AssetImporters.ScriptedImporter(kVersion, "glb1", kImportQueueOffset)]
+    public class Glb1Importer : AssetImporters.ScriptedImporter
+    {
+        const int kVersion = 1;
+        // ImportGltf needs to reference meshes and textures, so the glb import
+        // must come after them. We're assuming that Unity built-in asset types
+        // import at queue offset = 0.
+        const int kImportQueueOffset = 1;
 
-  public override void OnImportAsset(UnityEditor.AssetImporters.AssetImportContext ctx) {
-    IUriLoader loader = new BufferedStreamLoader(
-        ctx.assetPath, Path.GetDirectoryName(ctx.assetPath));
+        private static readonly GltfImportOptions kOptions = new GltfImportOptions
+        {
+            rescalingMode = GltfImportOptions.RescalingMode.CONVERT,
+            scaleFactor = 1,
+            recenter = false,
+        };
 
-    ImportGltf.GltfImportResult result = ImportGltf.Import(
-        ctx.assetPath, loader, null, kOptions);
+        public override void OnImportAsset(AssetImporters.AssetImportContext ctx)
+        {
+            IUriLoader loader = new BufferedStreamLoader(
+                ctx.assetPath, Path.GetDirectoryName(ctx.assetPath));
 
-    // The "identifier" param passed here is supposed to be:
-    // - Unique to this asset
-    // - Deterministic (if possible)
-    foreach (var obj in result.textures) {
-      if (! AssetDatabase.Contains(obj)) {
-        ctx.AddObjectToAsset("Texture/" + obj.name, obj);
-      }
+            ImportGltf.GltfImportResult result = ImportGltf.Import(
+                ctx.assetPath, loader, null, kOptions);
+
+            // The "identifier" param passed here is supposed to be:
+            // - Unique to this asset
+            // - Deterministic (if possible)
+            foreach (var obj in result.textures)
+            {
+                if (!AssetDatabase.Contains(obj))
+                {
+                    ctx.AddObjectToAsset("Texture/" + obj.name, obj);
+                }
+            }
+            foreach (var obj in result.materials)
+            {
+                ctx.AddObjectToAsset("Material/" + obj.name, obj);
+            }
+            foreach (var obj in result.meshes)
+            {
+                ctx.AddObjectToAsset("Mesh/" + obj.name, obj);
+            }
+            string objectName = Path.GetFileNameWithoutExtension(ctx.assetPath);
+            result.root.name = objectName;
+            ctx.AddObjectToAsset("ROOT", result.root);
+            ctx.SetMainObject(result.root);
+        }
     }
-    foreach (var obj in result.materials) {
-      ctx.AddObjectToAsset("Material/" + obj.name, obj);
+
+    [CustomEditor(typeof(Glb1Importer))]
+    public class Glb1ImporterEditor : AssetImporters.ScriptedImporterEditor
+    {
+        // SerializedProperty m_UniformScaleProp;
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            // m_UniformScaleProp = serializedObject.FindProperty("m_UniformScale");
+        }
+
+        public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
+        {
+            return base.RenderStaticPreview(assetPath, subAssets, width, height);
+        }
+
+        protected override bool useAssetDrawPreview
+        {
+            get { return base.useAssetDrawPreview; }
+        }
+
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+            // serializedObject.Update();
+            // EditorGUILayout.PropertyField(m_UniformScaleProp);
+            // EditorGUILayout.PropertyField(m_UniformScaleProp);
+            // serializedObject.ApplyModifiedProperties();
+            // ApplyRevertGUI();
+        }
     }
-    foreach (var obj in result.meshes) {
-      ctx.AddObjectToAsset("Mesh/" + obj.name, obj);
-    }
-    string objectName = Path.GetFileNameWithoutExtension(ctx.assetPath);
-    result.root.name = objectName;
-    ctx.AddObjectToAsset("ROOT", result.root);
-    ctx.SetMainObject(result.root);
-  }
-}
-
-[CustomEditor(typeof(Glb1Importer))]
-public class Glb1ImporterEditor : UnityEditor.AssetImporters.ScriptedImporterEditor {
-  // SerializedProperty m_UniformScaleProp;
-
-  public override void OnEnable() {
-    base.OnEnable();
-    // m_UniformScaleProp = serializedObject.FindProperty("m_UniformScale");
-  }
-
-  public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height) {
-    return base.RenderStaticPreview(assetPath, subAssets, width, height);
-  }
-
-  protected override bool useAssetDrawPreview {
-    get { return base.useAssetDrawPreview; }
-  }
-
-  public override void OnInspectorGUI() {
-    base.OnInspectorGUI();
-    // serializedObject.Update();
-    // EditorGUILayout.PropertyField(m_UniformScaleProp);
-    // EditorGUILayout.PropertyField(m_UniformScaleProp);
-    // serializedObject.ApplyModifiedProperties();
-    // ApplyRevertGUI();
-  }
-}
 
 }  // namespace TiltBrushToolkit
 

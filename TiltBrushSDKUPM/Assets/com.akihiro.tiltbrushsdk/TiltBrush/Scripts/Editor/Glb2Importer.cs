@@ -21,50 +21,64 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 
+#if UNITY_2020_3_OR_NEWER
+using AssetImporters= UnityEditor.AssetImporters;
+#else
+using AssetImporters = UnityEditor.Experimental.AssetImporters;
+#endif
 
-namespace TiltBrushToolkit {
 
-[UnityEditor.AssetImporters.ScriptedImporter(kVersion, "glb", kImportQueueOffset)]
-public class Glb2Importer : UnityEditor.AssetImporters.ScriptedImporter {
-  const int kVersion = 2;
-  // ImportGltf needs to reference meshes and textures, so the glb import
-  // must come after them. We're assuming that Unity built-in asset types
-  // import at queue offset = 0.
-  const int kImportQueueOffset = 1;
+namespace TiltBrushToolkit
+{
 
-  private static readonly GltfImportOptions kOptions = new GltfImportOptions {
-      rescalingMode = GltfImportOptions.RescalingMode.CONVERT,
-      scaleFactor = 1,
-      recenter = false,
-  };
+    [AssetImporters.ScriptedImporter(kVersion, "glb", kImportQueueOffset)]
+    public class Glb2Importer : AssetImporters.ScriptedImporter
+    {
+        const int kVersion = 2;
+        // ImportGltf needs to reference meshes and textures, so the glb import
+        // must come after them. We're assuming that Unity built-in asset types
+        // import at queue offset = 0.
+        const int kImportQueueOffset = 1;
 
-  public override void OnImportAsset(UnityEditor.AssetImporters.AssetImportContext ctx) {
-    IUriLoader loader = new BufferedStreamLoader(
-        ctx.assetPath, Path.GetDirectoryName(ctx.assetPath));
+        private static readonly GltfImportOptions kOptions = new GltfImportOptions
+        {
+            rescalingMode = GltfImportOptions.RescalingMode.CONVERT,
+            scaleFactor = 1,
+            recenter = false,
+        };
 
-    ImportGltf.GltfImportResult result = ImportGltf.Import(
-        ctx.assetPath, loader, null, kOptions);
+        public override void OnImportAsset(AssetImporters.AssetImportContext ctx)
+        {
+            IUriLoader loader = new BufferedStreamLoader(
+                ctx.assetPath, Path.GetDirectoryName(ctx.assetPath));
 
-    // The "identifier" param passed here is supposed to be:
-    // - Unique to this asset
-    // - Deterministic (if possible)
-    foreach (var obj in result.textures) {
-      if (! AssetDatabase.Contains(obj)) {
-        ctx.AddObjectToAsset("Texture/" + obj.name, obj);
-      }
+            ImportGltf.GltfImportResult result = ImportGltf.Import(
+                ctx.assetPath, loader, null, kOptions);
+
+            // The "identifier" param passed here is supposed to be:
+            // - Unique to this asset
+            // - Deterministic (if possible)
+            foreach (var obj in result.textures)
+            {
+                if (!AssetDatabase.Contains(obj))
+                {
+                    ctx.AddObjectToAsset("Texture/" + obj.name, obj);
+                }
+            }
+            foreach (var obj in result.materials)
+            {
+                ctx.AddObjectToAsset("Material/" + obj.name, obj);
+            }
+            foreach (var obj in result.meshes)
+            {
+                ctx.AddObjectToAsset("Mesh/" + obj.name, obj);
+            }
+            string objectName = Path.GetFileNameWithoutExtension(ctx.assetPath);
+            result.root.name = objectName;
+            ctx.AddObjectToAsset("ROOT", result.root);
+            ctx.SetMainObject(result.root);
+        }
     }
-    foreach (var obj in result.materials) {
-      ctx.AddObjectToAsset("Material/" + obj.name, obj);
-    }
-    foreach (var obj in result.meshes) {
-      ctx.AddObjectToAsset("Mesh/" + obj.name, obj);
-    }
-    string objectName = Path.GetFileNameWithoutExtension(ctx.assetPath);
-    result.root.name = objectName;
-    ctx.AddObjectToAsset("ROOT", result.root);
-    ctx.SetMainObject(result.root);
-  }
-}
 
 }  // namespace TiltBrushToolkit
 
